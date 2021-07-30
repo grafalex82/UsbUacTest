@@ -20,8 +20,12 @@ public:
 
     int getOutputMute();
 
-    void setOutputSampleRate();
+    void setOutputSampleRate(int rate);
     int getOutputSampleRate();
+
+private:
+    int getControlValue(uint8_t reqType, uint8_t control, uint16_t valueSize);
+    void setControlValue(uint8_t reqType, uint8_t control, int value, uint16_t valueSize);
 };
 
 

@@ -2,10 +2,13 @@
 #include "Utils.h"
 
 #include <libusb.h>
+#include <algorithm>
 
 static const uint8_t AUDIO_CONTROL_INTERFACE = 0; // TODO: Should be taken from the descriptor
 static const uint8_t AUDIO_OUTPUT_INTERFACE = 1; // TODO: Should be taken from the descriptor
 static const uint8_t AUDIO_INPUT_INTERFACE = 2; // TODO: Should be taken from the descriptor
+
+static const uint8_t AUDIO_OUTPUT_STREAMING_EP = 1; // TODO: Should be taken from the descriptor
 
 static const uint8_t SAMPLE_SIZE_16BIT_ALTSETTING = 1; // TODO: Should be taken from the descriptor
 static const uint8_t SAMPLE_SIZE_24BIT_ALTSETTING = 2; // TODO: Should be taken from the descriptor
@@ -21,6 +24,8 @@ static const uint8_t AUDIO_OUT_CTRL_UNIT = 0x02U; // TODO: Should be taken from 
 
 static const uint8_t AUDIO_CONTROL_SELECTOR_MUTE = 0x01U;
 static const uint8_t AUDIO_CONTROL_SELECTOR_VOLUME = 0x02U;
+
+static const uint8_t SAMPLING_FREQ_CONTROL = 0x01U;
 
 
 UacDevice::UacDevice(uint16_t vid, uint16_t pid)
@@ -46,72 +51,64 @@ void UacDevice::prepareAudioOutput()
 
 void UacDevice::setOutputVolume(int volume)
 {
-
+    setControlValue(AUDIO_REQ_SET_CUR, AUDIO_CONTROL_SELECTOR_VOLUME, volume, sizeof(int16_t));
 }
 
 int UacDevice::getOutputVolume()
 {
-    int16_t res = 0;
-
-    device.controlReq(LIBUSB_ENDPOINT_IN |LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
-        AUDIO_REQ_GET_CUR, // Request type
-        AUDIO_CONTROL_SELECTOR_VOLUME << 8, // target control 
-        AUDIO_OUT_CTRL_UNIT << 8 | AUDIO_CONTROL_INTERFACE,
-        sizeof(int16_t),
-        (unsigned char*)&res
-        );
-
-    return res;
+    return (int16_t)getControlValue(AUDIO_REQ_GET_CUR, AUDIO_CONTROL_SELECTOR_VOLUME, sizeof(int16_t));
 }
 
 int UacDevice::getOutputMinVolume()
 {
-    int16_t res = 0;
-
-    device.controlReq(LIBUSB_ENDPOINT_IN |LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
-        AUDIO_REQ_GET_MIN, // Request type
-        AUDIO_CONTROL_SELECTOR_VOLUME << 8, // target control 
-        AUDIO_OUT_CTRL_UNIT << 8 | AUDIO_CONTROL_INTERFACE,
-        sizeof(int16_t),
-        (unsigned char*)&res
-        );
-
-    return res;
+    return (int16_t)getControlValue(AUDIO_REQ_GET_MIN, AUDIO_CONTROL_SELECTOR_VOLUME, sizeof(int16_t));
 }
 
 int UacDevice::getOutputMaxVolume()
 {
-    int16_t res = 0;
-
-    device.controlReq(LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
-        AUDIO_REQ_GET_MAX, // Request type
-        AUDIO_CONTROL_SELECTOR_VOLUME << 8, // target control 
-        AUDIO_OUT_CTRL_UNIT << 8 | AUDIO_CONTROL_INTERFACE,
-        sizeof(int16_t),
-        (unsigned char*)&res
-        );
-
-    return res;
+    return (int16_t)getControlValue(AUDIO_REQ_GET_MAX, AUDIO_CONTROL_SELECTOR_VOLUME, sizeof(int16_t));
 }
 
 int UacDevice::getOutputMute()
 {
-    uint8_t res = 0;
+    return getControlValue(AUDIO_REQ_GET_CUR, AUDIO_CONTROL_SELECTOR_MUTE, sizeof(uint8_t));
+}
+
+int UacDevice::getControlValue(uint8_t reqType, uint8_t control, uint16_t valueSize)
+{
+    int32_t res = 0;
 
     device.controlReq(LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
-        AUDIO_REQ_GET_CUR, // Request type
-        AUDIO_CONTROL_SELECTOR_MUTE << 8, // target control 
+        reqType, 
+        control << 8, // target control 
         AUDIO_OUT_CTRL_UNIT << 8 | AUDIO_CONTROL_INTERFACE,
-        sizeof(res),
+        std::min(valueSize, (uint16_t)sizeof(res)),
         (unsigned char*)&res
         );
 
     return res;
 }
 
-void UacDevice::setOutputSampleRate()
+void UacDevice::setControlValue(uint8_t reqType, uint8_t control, int value, uint16_t valueSize)
 {
+    device.controlReq(LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+        reqType, 
+        control << 8, // target control 
+        AUDIO_OUT_CTRL_UNIT << 8 | AUDIO_CONTROL_INTERFACE,
+        std::min(valueSize, (uint16_t)sizeof(int)),
+        (unsigned char*)&value
+        );
+}
 
+void UacDevice::setOutputSampleRate(int rate)
+{
+    device.controlReq(LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_ENDPOINT,
+        AUDIO_REQ_SET_CUR, // Request type
+        SAMPLING_FREQ_CONTROL << 8, // selector type
+        AUDIO_OUTPUT_STREAMING_EP, // endpoint number
+        3, // yes 3, not 4
+        (unsigned char*)&rate
+        );
 }
 
 int UacDevice::getOutputSampleRate()
@@ -120,8 +117,8 @@ int UacDevice::getOutputSampleRate()
 
     device.controlReq(LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_ENDPOINT,
         AUDIO_REQ_GET_CUR, // Request type
-        1 << 8, // ????????
-        1, // ??????????
+        SAMPLING_FREQ_CONTROL << 8, // selector type
+        AUDIO_OUTPUT_STREAMING_EP, // endpoint number
         3, // yes 3, not 4
         (unsigned char*)&res
         );

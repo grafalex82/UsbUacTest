@@ -19,6 +19,17 @@ int main(int argc, char ** argv)
 	printf("    Mute: %d\n", device.getOutputMute());
 	printf("    Sample Rate: %d\n", device.getOutputSampleRate());
 
+	printf("Setting new values\n");
+
+	device.setOutputVolume(20);
+	device.setOutputSampleRate(48000);
+
+	printf("    Current volume: %d\n", device.getOutputVolume());
+	printf("    Maximum volume: %d\n", device.getOutputMinVolume());
+	printf("    Minimum volume: %d\n", device.getOutputMaxVolume());
+	printf("    Mute: %d\n", device.getOutputMute());
+	printf("    Sample Rate: %d\n", device.getOutputSampleRate());
+
 	return 0;
 }
 
