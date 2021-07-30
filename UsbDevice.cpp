@@ -1,7 +1,8 @@
 #include "UsbDevice.h"
 #include "Utils.h"
 
-#include "libusb.h"
+#include <libusb.h>
+#include <stdio.h>
 
 
 UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
@@ -49,4 +50,10 @@ void UsbDevice::setAltsetting(uint8_t interface, uint8_t altsetting)
 {
     int ret = libusb_set_interface_alt_setting(hdev, interface, altsetting);
     check(ret, "libusb_set_interface_alt_setting()");
+}
+
+void UsbDevice::controlReq(uint8_t requestType, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint16_t wLength, unsigned char * data)
+{
+    int ret = libusb_control_transfer(hdev, requestType, bRequest, wValue, wIndex, data, wLength, 1000);
+    check(ret, "libusb_control_transfer()");
 }

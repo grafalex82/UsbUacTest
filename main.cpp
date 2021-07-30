@@ -13,6 +13,11 @@ int main(int argc, char ** argv)
 	device.prepareAudioOutput();
 
 	printf("Device ready\n");
+	printf("    Current volume: %d\n", device.getOutputVolume());
+	printf("    Maximum volume: %d\n", device.getOutputMinVolume());
+	printf("    Minimum volume: %d\n", device.getOutputMaxVolume());
+	printf("    Mute: %d\n", device.getOutputMute());
+	printf("    Sample Rate: %d\n", device.getOutputSampleRate());
 
 	return 0;
 }

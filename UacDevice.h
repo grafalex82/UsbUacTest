@@ -9,8 +9,19 @@ class UacDevice
 
 public:
     UacDevice(uint16_t vid, uint16_t pid);
+    ~UacDevice();
 
     void prepareAudioOutput();
+
+    void setOutputVolume(int volume);
+    int getOutputVolume();
+    int getOutputMinVolume();
+    int getOutputMaxVolume();
+
+    int getOutputMute();
+
+    void setOutputSampleRate();
+    int getOutputSampleRate();
 };
 
 
