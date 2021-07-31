@@ -7,46 +7,66 @@
 static const uint16_t IRIG_UD2_VID = 0x1963;
 static const uint16_t IRIG_UD2_PID = 0x0033;
 
+void printUsage()
+{
+    printf("Usage:\n");
+    printf("    UAC2Test play <filename>\n");
+    printf("    UAC2Test record <filename>\n");
+}
+
+void play(int argc, char ** argv)
+{
+    // TODO: Add parameter parsing, and particularly sample rate
+
+    printf("Preparing the device...\n");
+    UacDevice device(IRIG_UD2_VID, IRIG_UD2_PID);
+    device.prepareAudioOutput();
+
+    printf("Device ready. Setting audio parameters\n");
+    device.setOutputVolume(20);
+    device.setOutputSampleRate(48000);
+
+    printf("    Current volume: %d\n", device.getOutputVolume());
+    printf("    Maximum volume: %d\n", device.getOutputMinVolume());
+    printf("    Minimum volume: %d\n", device.getOutputMaxVolume());
+    printf("    Mute: %d\n", device.getOutputMute());
+    printf("    Sample Rate: %d\n", device.getOutputSampleRate());
+
+    // Load file to play
+    FILE * pcm = fopen(argv[2],"rb");
+    check(pcm != NULL, "fopen() pcm file");
+    fseek(pcm, 0, SEEK_END);
+    long size = ftell(pcm);
+    check(size != 0, "PCM file is empty");
+    fseek(pcm, 0, SEEK_SET);
+    check(ftell(pcm) == 0, "Incorrect file position");
+
+    unsigned char * pcmData = new unsigned char[size];
+    int readBytes = fread(pcmData, 1, size, pcm);
+    check(readBytes == size, "Cant read PCM data");
+    fclose(pcm);
+
+    device.playPCM(pcmData, size);
+}
+
+void record(int argc, char ** argv)
+{
+
+}
+
 int main(int argc, char ** argv)
 {
-	printf("Preparing the device...\n");
-	UacDevice device(IRIG_UD2_VID, IRIG_UD2_PID);
-	device.prepareAudioOutput();
+    if(argc < 3)
+    {
+        printUsage();
+        return 1;
+    }
 
-	printf("Device ready\n");
-	printf("    Current volume: %d\n", device.getOutputVolume());
-	printf("    Maximum volume: %d\n", device.getOutputMinVolume());
-	printf("    Minimum volume: %d\n", device.getOutputMaxVolume());
-	printf("    Mute: %d\n", device.getOutputMute());
-	printf("    Sample Rate: %d\n", device.getOutputSampleRate());
+    if(!strcmp(argv[1], "play"))
+        play(argc, argv);
 
-	printf("Setting new values\n");
-
-	// Set desired audio parameters
-	device.setOutputVolume(20);
-	device.setOutputSampleRate(48000);
-
-	printf("    Current volume: %d\n", device.getOutputVolume());
-	printf("    Maximum volume: %d\n", device.getOutputMinVolume());
-	printf("    Minimum volume: %d\n", device.getOutputMaxVolume());
-	printf("    Mute: %d\n", device.getOutputMute());
-	printf("    Sample Rate: %d\n", device.getOutputSampleRate());
-
-	// Load file to play
-	FILE * pcm = fopen("./data.pcm","rb");
-	check(pcm != NULL, "fopen() data.pcm");
-	fseek(pcm, 0, SEEK_END);
-	long size = ftell(pcm);
-	check(size != 0, "PCM file is empty");
-	fseek(pcm, 0, SEEK_SET);
-	check(ftell(pcm) == 0, "Incorrect file position");
-
-	unsigned char * pcmData = new unsigned char[size];
-	int readBytes = fread(pcmData, 1, size, pcm);
-	check(readBytes == size, "Cant read PCM data");
-	fclose(pcm);
-
-	device.playPCM(pcmData, size);
+    if(!strcmp(argv[1], "record"))
+        record(argc, argv);
 
 	return 0;
 }
@@ -115,8 +135,7 @@ static void cb_xfr(struct libusb_transfer *xfr)
 	else
 	{
 		printf("re-submint ok !\n");
-	}
- 
+	} 
 }
 
 int main()
