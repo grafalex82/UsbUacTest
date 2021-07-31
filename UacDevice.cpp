@@ -1,7 +1,6 @@
 #include "UacDevice.h"
 #include "Utils.h"
 
-#include <libusb.h>
 #include <algorithm>
 
 static const uint8_t AUDIO_CONTROL_INTERFACE = 0; // TODO: Should be taken from the descriptor
@@ -78,7 +77,7 @@ int UacDevice::getControlValue(uint8_t reqType, uint8_t control, uint16_t valueS
 {
     int32_t res = 0;
 
-    device.controlReq(LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+    device.getControlAttr(false, // Interface
         reqType, 
         control << 8, // target control 
         AUDIO_OUT_CTRL_UNIT << 8 | AUDIO_CONTROL_INTERFACE,
@@ -91,7 +90,7 @@ int UacDevice::getControlValue(uint8_t reqType, uint8_t control, uint16_t valueS
 
 void UacDevice::setControlValue(uint8_t reqType, uint8_t control, int value, uint16_t valueSize)
 {
-    device.controlReq(LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+    device.setControlAttr(false, // Interface
         reqType, 
         control << 8, // target control 
         AUDIO_OUT_CTRL_UNIT << 8 | AUDIO_CONTROL_INTERFACE,
@@ -102,7 +101,7 @@ void UacDevice::setControlValue(uint8_t reqType, uint8_t control, int value, uin
 
 void UacDevice::setOutputSampleRate(int rate)
 {
-    device.controlReq(LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_ENDPOINT,
+    device.setControlAttr(true, // Endpoint
         AUDIO_REQ_SET_CUR, // Request type
         SAMPLING_FREQ_CONTROL << 8, // selector type
         AUDIO_OUTPUT_STREAMING_EP, // endpoint number
@@ -115,7 +114,7 @@ int UacDevice::getOutputSampleRate()
 {
     uint32_t res = 0;
 
-    device.controlReq(LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_ENDPOINT,
+    device.getControlAttr(true, // Endpoint
         AUDIO_REQ_GET_CUR, // Request type
         SAMPLING_FREQ_CONTROL << 8, // selector type
         AUDIO_OUTPUT_STREAMING_EP, // endpoint number
