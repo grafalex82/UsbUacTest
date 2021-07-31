@@ -4,24 +4,35 @@
 #include <libusb.h>
 #include <stdio.h>
 
+static const size_t NUM_TRANSFERS = 10;
 
 UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
 {
-    transferInProgress = false;
-
-    int ret;
-
     // Init the library (TODO: perhaps this should move to a global context)
-    ret = libusb_init(NULL);
+    int ret = libusb_init(NULL);
     check(ret, "libusb_init()");
 
     // Now open the device with specified VID/PID
     hdev = libusb_open_device_with_vid_pid(NULL, vid, pid);
     check(hdev != NULL, "open_device_with_vid_pid");
+
+    // Allocate needed number of transfer objects
+    for(size_t i=0; i<NUM_TRANSFERS; i++)
+    {
+        libusb_transfer * xfer = libusb_alloc_transfer(1);
+        availableXfers.push_back(xfer);
+    }
+
 }
 
 UsbDevice::~UsbDevice()
 {
+    for(libusb_transfer * xfer : availableXfers)
+        libusb_free_transfer(xfer);
+
+    for(libusb_transfer * xfer : availableXfers)
+        libusb_free_transfer(xfer);
+
     libusb_close(hdev);
 	libusb_exit(NULL);
 }
@@ -82,25 +93,38 @@ void UsbDevice::transferCompleteCB(struct libusb_transfer * xfer)
 
 void UsbDevice::handleTransferCompleteCB(libusb_transfer * xfer)
 {
-//    printf("Transfer complete\n");
-    transferInProgress = false;
+    fflush(stdout);
+    availableXfers.push_back(xfer);
 }
 
-void UsbDevice::transferIsoData(uint8_t ep, unsigned char * data, uint16_t numPackets, uint16_t packetSize)
+void UsbDevice::transferIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize)
 {
+    size_t totalPackets = size / packetSize;
+    size_t packetsSent = 0;
 
-    libusb_transfer * xfer = libusb_alloc_transfer(numPackets);
-    libusb_fill_iso_transfer(xfer, hdev, ep, data, packetSize * numPackets, numPackets, transferCompleteCB, this, 1000);
-    libusb_set_iso_packet_lengths(xfer, packetSize);
-
-    transferInProgress = true;
-    libusb_submit_transfer(xfer);
-
-    while(transferInProgress)
+    while(packetsSent < totalPackets)
     {
-	int ret = libusb_handle_events(NULL);
-	check(ret, "libusb_handle_events()");
+        // Feed as many packets as possible
+        while(availableXfers.size() > 0)
+        {
+            libusb_transfer * xfer = availableXfers.back();
+            availableXfers.pop_back();
+            libusb_fill_iso_transfer(xfer, hdev, ep, data, packetSize, 1, transferCompleteCB, this, 1000);
+            libusb_set_iso_packet_lengths(xfer, packetSize);
+            libusb_submit_transfer(xfer);
+
+            data += packetSize;
+            packetsSent++;
+        }
+
+        int ret = libusb_handle_events(NULL);
+        check(ret, "libusb_handle_events()");
     }
 
-    libusb_free_transfer(xfer);
+    // Wait for remaining packets to be sent
+    while(availableXfers.size() != NUM_TRANSFERS)
+    {
+        int ret = libusb_handle_events(NULL);
+        check(ret, "libusb_handle_events()");
+    }
 }

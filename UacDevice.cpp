@@ -128,14 +128,8 @@ int UacDevice::getOutputSampleRate()
 
 void UacDevice::playPCM(unsigned char * data, size_t size)
 {
-    static const uint16_t NUM_PACKETS = 10; // On chunk is 10 ms packets
-    size_t numChunks = size / NUM_PACKETS / OUTPUT_PACKET_SIZE;
-
-    for(size_t i=0; i<numChunks; i++)
-    {
-        device.transferIsoData(AUDIO_OUTPUT_STREAMING_EP, 
-                               data + i * NUM_PACKETS * OUTPUT_PACKET_SIZE,
-                               NUM_PACKETS,
-                               OUTPUT_PACKET_SIZE);
-    }
+    device.transferIsoData(AUDIO_OUTPUT_STREAMING_EP,
+                           data,
+                           size,
+                           OUTPUT_PACKET_SIZE);
 }

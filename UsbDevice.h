@@ -2,6 +2,7 @@
 #define _USB_DEVICE_H
 
 #include <stdint.h>
+#include <vector>
 
 struct libusb_device_handle;
 struct libusb_transfer;
@@ -9,7 +10,8 @@ struct libusb_transfer;
 class UsbDevice
 {
     libusb_device_handle * hdev;
-    bool transferInProgress;
+
+    std::vector<libusb_transfer *>  availableXfers;
 
 public:
     UsbDevice(uint16_t vid, uint16_t pid);
@@ -23,7 +25,7 @@ public:
     void getControlAttr(bool recepient, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint16_t wLength, unsigned char * data);
     void setControlAttr(bool recepient, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint16_t wLength, unsigned char * data);
 
-    void transferIsoData(uint8_t ep, unsigned char * data, uint16_t numPackets, uint16_t packetSize);
+    void transferIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
 
     void closeInterface(uint8_t interface);
 
