@@ -91,7 +91,6 @@ void UsbDevice::transferCompleteCB(struct libusb_transfer * xfer)
 
 void UsbDevice::handleTransferCompleteCB(libusb_transfer * xfer)
 {
-    fflush(stdout);
     availableXfers.push_back(xfer);
 }
 

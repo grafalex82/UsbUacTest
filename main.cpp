@@ -23,14 +23,14 @@ void play(int argc, char ** argv)
     device.prepareAudioOutput();
 
     printf("Device ready. Setting audio parameters\n");
-    device.setOutputVolume(20);
-    device.setOutputSampleRate(48000);
+    device.setChannelVolume(UacDevice::Output, 20);
+    device.setChannelSampleRate(UacDevice::Output, 48000);
 
-    printf("    Current volume: %d\n", device.getOutputVolume());
-    printf("    Maximum volume: %d\n", device.getOutputMinVolume());
-    printf("    Minimum volume: %d\n", device.getOutputMaxVolume());
-    printf("    Mute: %d\n", device.getOutputMute());
-    printf("    Sample Rate: %d\n", device.getOutputSampleRate());
+    printf("    Current volume: %d\n", device.getChannelVolume(UacDevice::Output));
+    printf("    Maximum volume: %d\n", device.getChannelMinVolume(UacDevice::Output));
+    printf("    Minimum volume: %d\n", device.getChannelMaxVolume(UacDevice::Output));
+    printf("    Mute: %d\n", device.getChannelMute(UacDevice::Output));
+    printf("    Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Output));
 
     // Load file to play
     FILE * pcm = fopen(argv[2],"rb");
@@ -51,7 +51,13 @@ void play(int argc, char ** argv)
 
 void record(int argc, char ** argv)
 {
+    printf("Preparing the device...\n");
+    UacDevice device(IRIG_UD2_VID, IRIG_UD2_PID);
+    device.prepareAudioInput();
 
+    printf("Device ready. Setting audio parameters\n");
+    device.setChannelSampleRate(UacDevice::Input, 48000);
+    printf("    Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Input));
 }
 
 int main(int argc, char ** argv)
