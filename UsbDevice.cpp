@@ -7,6 +7,8 @@
 
 UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
 {
+    transferInProgress = false;
+
     int ret;
 
     // Init the library (TODO: perhaps this should move to a global context)
@@ -72,3 +74,33 @@ void UsbDevice::setControlAttr(bool recepient, uint8_t bRequest, uint16_t wValue
     controlReq(bmRequestType, bRequest, wValue, wIndex, wLength, data);
 }
 
+void UsbDevice::transferCompleteCB(struct libusb_transfer * xfer)
+{
+    UsbDevice * device = static_cast<UsbDevice*>(xfer->user_data);
+    device->handleTransferCompleteCB(xfer);
+}
+
+void UsbDevice::handleTransferCompleteCB(libusb_transfer * xfer)
+{
+//    printf("Transfer complete\n");
+    transferInProgress = false;
+}
+
+void UsbDevice::transferIsoData(uint8_t ep, unsigned char * data, uint16_t numPackets, uint16_t packetSize)
+{
+
+    libusb_transfer * xfer = libusb_alloc_transfer(numPackets);
+    libusb_fill_iso_transfer(xfer, hdev, ep, data, packetSize * numPackets, numPackets, transferCompleteCB, this, 1000);
+    libusb_set_iso_packet_lengths(xfer, packetSize);
+
+    transferInProgress = true;
+    libusb_submit_transfer(xfer);
+
+    while(transferInProgress)
+    {
+	int ret = libusb_handle_events(NULL);
+	check(ret, "libusb_handle_events()");
+    }
+
+    libusb_free_transfer(xfer);
+}

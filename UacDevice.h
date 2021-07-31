@@ -3,6 +3,8 @@
 
 #include "UsbDevice.h"
 
+#include <string.h> // for size_t
+
 class UacDevice
 {
     UsbDevice device;
@@ -22,6 +24,8 @@ public:
 
     void setOutputSampleRate(int rate);
     int getOutputSampleRate();
+
+    void playPCM(unsigned char * data, size_t size);
 
 private:
     int getControlValue(uint8_t reqType, uint8_t control, uint16_t valueSize);

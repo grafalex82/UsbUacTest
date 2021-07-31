@@ -1,10 +1,11 @@
 #include "UacDevice.h"
+#include "Utils.h"
 
 #include <stdio.h>
 
+
 static const uint16_t IRIG_UD2_VID = 0x1963;
 static const uint16_t IRIG_UD2_PID = 0x0033;
-
 
 int main(int argc, char ** argv)
 {
@@ -21,6 +22,7 @@ int main(int argc, char ** argv)
 
 	printf("Setting new values\n");
 
+	// Set desired audio parameters
 	device.setOutputVolume(20);
 	device.setOutputSampleRate(48000);
 
@@ -29,6 +31,22 @@ int main(int argc, char ** argv)
 	printf("    Minimum volume: %d\n", device.getOutputMaxVolume());
 	printf("    Mute: %d\n", device.getOutputMute());
 	printf("    Sample Rate: %d\n", device.getOutputSampleRate());
+
+	// Load file to play
+	FILE * pcm = fopen("./data.pcm","rb");
+	check(pcm != NULL, "fopen() data.pcm");
+	fseek(pcm, 0, SEEK_END);
+	long size = ftell(pcm);
+	check(size != 0, "PCM file is empty");
+	fseek(pcm, 0, SEEK_SET);
+	check(ftell(pcm) == 0, "Incorrect file position");
+
+	unsigned char * pcmData = new unsigned char[size];
+	int readBytes = fread(pcmData, 1, size, pcm);
+	check(readBytes == size, "Cant read PCM data");
+	fclose(pcm);
+
+	device.playPCM(pcmData, size);
 
 	return 0;
 }
@@ -63,7 +81,7 @@ static void cb_xfr(struct libusb_transfer *xfr)
 	if(bFisrt)
 	{
 		bFisrt = 0;
-		fout = fopen("./output_data.pcm","w+");
+		fout = fopen("data.pcm","w+");
 		if(fout == NULL)
 		{
 			printf("canok:: erro to openfile[%d%s] \n",__LINE__,__FUNCTION__);

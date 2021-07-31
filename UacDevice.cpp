@@ -26,6 +26,7 @@ static const uint8_t AUDIO_CONTROL_SELECTOR_VOLUME = 0x02U;
 
 static const uint8_t SAMPLING_FREQ_CONTROL = 0x01U;
 
+static const uint16_t OUTPUT_PACKET_SIZE = (48000 / 1000) * sizeof(uint16_t) * 2; // 1 ms of audio at 48kHz rate, 2 bytes per sample, 2 channels
 
 UacDevice::UacDevice(uint16_t vid, uint16_t pid)
     : device(vid, pid)
@@ -123,4 +124,18 @@ int UacDevice::getOutputSampleRate()
         );
 
     return res;
+}
+
+void UacDevice::playPCM(unsigned char * data, size_t size)
+{
+    static const uint16_t NUM_PACKETS = 10; // On chunk is 10 ms packets
+    size_t numChunks = size / NUM_PACKETS / OUTPUT_PACKET_SIZE;
+
+    for(size_t i=0; i<numChunks; i++)
+    {
+        device.transferIsoData(AUDIO_OUTPUT_STREAMING_EP, 
+                               data + i * NUM_PACKETS * OUTPUT_PACKET_SIZE,
+                               NUM_PACKETS,
+                               OUTPUT_PACKET_SIZE);
+    }
 }
