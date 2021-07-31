@@ -33,6 +33,7 @@ public:
     int getChannelSampleRate(Channel channel);
 
     void playPCM(unsigned char * data, size_t size);
+    void recordPCM(unsigned char * data, size_t size);
 
 private:
     int getControlValue(uint8_t reqType, Channel channel, uint8_t control, uint16_t valueSize);

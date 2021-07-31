@@ -2,6 +2,7 @@
 #include "Utils.h"
 
 #include <stdio.h>
+#include <memory>
 
 
 static const uint16_t IRIG_UD2_VID = 0x1963;
@@ -41,12 +42,12 @@ void play(int argc, char ** argv)
     fseek(pcm, 0, SEEK_SET);
     check(ftell(pcm) == 0, "Incorrect file position");
 
-    unsigned char * pcmData = new unsigned char[size];
-    int readBytes = fread(pcmData, 1, size, pcm);
+    std::unique_ptr<unsigned char[]> pcmData(new unsigned char[size]);
+    int readBytes = fread(pcmData.get(), 1, size, pcm);
     check(readBytes == size, "Cant read PCM data");
     fclose(pcm);
 
-    device.playPCM(pcmData, size);
+    device.playPCM(pcmData.get(), size);
 }
 
 void record(int argc, char ** argv)
@@ -58,6 +59,15 @@ void record(int argc, char ** argv)
     printf("Device ready. Setting audio parameters\n");
     device.setChannelSampleRate(UacDevice::Input, 48000);
     printf("    Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Input));
+
+    size_t size = 5 * 48000 * 3; // 5 seconds of 48kHz audio at 24 bit/sample
+    std::unique_ptr<unsigned char[]> pcmData(new unsigned char[size]);
+    device.recordPCM(pcmData.get(), size);
+
+    FILE * pcm = fopen(argv[2],"w+b");
+    check(pcm != NULL, "fopen() pcm file");
+    fwrite(pcmData.get(), 1, size, pcm);
+    fclose(pcm);
 }
 
 int main(int argc, char ** argv)

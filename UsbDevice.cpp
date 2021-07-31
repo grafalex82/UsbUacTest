@@ -94,7 +94,7 @@ void UsbDevice::handleTransferCompleteCB(libusb_transfer * xfer)
     availableXfers.push_back(xfer);
 }
 
-void UsbDevice::transferIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize)
+void UsbDevice::sendIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize)
 {
     size_t totalPackets = size / packetSize;
     size_t bytesToGo = size;
@@ -108,6 +108,41 @@ void UsbDevice::transferIsoData(uint8_t ep, unsigned char * data, size_t size, u
 
             libusb_transfer * xfer = availableXfers.back();
             availableXfers.pop_back();
+            libusb_fill_iso_transfer(xfer, hdev, ep, data, chunkSize, NUM_PACKETS, transferCompleteCB, this, 1000);
+            libusb_set_iso_packet_lengths(xfer, packetSize);
+            libusb_submit_transfer(xfer);
+
+            data += chunkSize;
+            bytesToGo -= chunkSize;
+        }
+
+        int ret = libusb_handle_events(NULL);
+        check(ret, "libusb_handle_events()");
+    }
+
+    // Wait for remaining packets to be sent
+    while(availableXfers.size() != NUM_TRANSFERS)
+    {
+        int ret = libusb_handle_events(NULL);
+        check(ret, "libusb_handle_events()");
+    }
+}
+
+void UsbDevice::receiveIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize)
+{
+    size_t totalPackets = size / packetSize;
+    size_t bytesToGo = size;
+
+    while(bytesToGo > 0)
+    {
+        // Schedule as many packet transfers as possible
+        while(availableXfers.size() > 0)
+        {
+            size_t chunkSize = std::min((size_t)packetSize * NUM_PACKETS, bytesToGo);
+
+            libusb_transfer * xfer = availableXfers.back();
+            availableXfers.pop_back();
+
             libusb_fill_iso_transfer(xfer, hdev, ep, data, chunkSize, NUM_PACKETS, transferCompleteCB, this, 1000);
             libusb_set_iso_packet_lengths(xfer, packetSize);
             libusb_submit_transfer(xfer);

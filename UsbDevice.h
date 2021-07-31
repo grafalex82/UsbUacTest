@@ -25,7 +25,8 @@ public:
     void getControlAttr(bool recepient, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint16_t wLength, unsigned char * data);
     void setControlAttr(bool recepient, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint16_t wLength, unsigned char * data);
 
-    void transferIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
+    void sendIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
+    void receiveIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
 
     void closeInterface(uint8_t interface);
 

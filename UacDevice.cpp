@@ -30,6 +30,7 @@ static const uint8_t AUDIO_CONTROL_SELECTOR_VOLUME = 0x02U;
 static const uint8_t SAMPLING_FREQ_CONTROL = 0x01U;
 
 static const uint16_t OUTPUT_PACKET_SIZE = (48000 / 1000) * sizeof(uint16_t) * 2; // 1 ms of audio at 48kHz rate, 2 bytes per sample, 2 channels
+static const uint16_t INPUT_PACKET_SIZE = (48000 / 1000) * 3 ; // 1 ms of audio at 48kHz rate, 3 bytes per sample (even for 16bit sample size), 1 channel
 
 UacDevice::UacDevice(uint16_t vid, uint16_t pid)
     : device(vid, pid)
@@ -55,7 +56,7 @@ void UacDevice::prepareAudioOutput()
 void UacDevice::prepareAudioInput()
 {
     // Select interface configuration with 16bit sample size
-    device.setAltsetting(AUDIO_INPUT_INTERFACE, SAMPLE_SIZE_16BIT_ALTSETTING);
+    device.setAltsetting(AUDIO_INPUT_INTERFACE, SAMPLE_SIZE_24BIT_ALTSETTING);
 }
 
 void UacDevice::setChannelVolume(Channel channel, int volume)
@@ -152,8 +153,16 @@ uint8_t UacDevice::getCtrlUnitForChannel(Channel channel)
 
 void UacDevice::playPCM(unsigned char * data, size_t size)
 {
-    device.transferIsoData(AUDIO_OUTPUT_STREAMING_EP,
+    device.sendIsoData(AUDIO_OUTPUT_STREAMING_EP,
                            data,
                            size,
                            OUTPUT_PACKET_SIZE);
+}
+
+void UacDevice::recordPCM(unsigned char * data, size_t size)
+{
+    device.receiveIsoData(AUDIO_INPUT_STREAMING_EP,
+                           data,
+                           size,
+                           INPUT_PACKET_SIZE);
 }
