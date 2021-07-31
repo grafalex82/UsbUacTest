@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 static const size_t NUM_TRANSFERS = 10;
+static const uint8_t NUM_PACKETS = 2;
 
 UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
 {
@@ -19,7 +20,7 @@ UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
     // Allocate needed number of transfer objects
     for(size_t i=0; i<NUM_TRANSFERS; i++)
     {
-        libusb_transfer * xfer = libusb_alloc_transfer(1);
+        libusb_transfer * xfer = libusb_alloc_transfer(NUM_PACKETS);
         availableXfers.push_back(xfer);
     }
 
@@ -27,9 +28,6 @@ UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
 
 UsbDevice::~UsbDevice()
 {
-    for(libusb_transfer * xfer : availableXfers)
-        libusb_free_transfer(xfer);
-
     for(libusb_transfer * xfer : availableXfers)
         libusb_free_transfer(xfer);
 
@@ -100,21 +98,23 @@ void UsbDevice::handleTransferCompleteCB(libusb_transfer * xfer)
 void UsbDevice::transferIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize)
 {
     size_t totalPackets = size / packetSize;
-    size_t packetsSent = 0;
+    size_t bytesToGo = size;
 
-    while(packetsSent < totalPackets)
+    while(bytesToGo > 0)
     {
         // Feed as many packets as possible
         while(availableXfers.size() > 0)
         {
+            size_t chunkSize = std::min((size_t)packetSize * NUM_PACKETS, bytesToGo);
+
             libusb_transfer * xfer = availableXfers.back();
             availableXfers.pop_back();
-            libusb_fill_iso_transfer(xfer, hdev, ep, data, packetSize, 1, transferCompleteCB, this, 1000);
+            libusb_fill_iso_transfer(xfer, hdev, ep, data, chunkSize, NUM_PACKETS, transferCompleteCB, this, 1000);
             libusb_set_iso_packet_lengths(xfer, packetSize);
             libusb_submit_transfer(xfer);
 
-            data += packetSize;
-            packetsSent++;
+            data += chunkSize;
+            bytesToGo -= chunkSize;
         }
 
         int ret = libusb_handle_events(NULL);
