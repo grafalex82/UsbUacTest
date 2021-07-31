@@ -104,10 +104,6 @@ static void cb_xfr(struct libusb_transfer *xfr)
 int main()
 {
  
-	 //-------------------The same interface can have multiple interface descriptors, identified by bAlternateSetting.
-	 //BAlternateSetting value in Interface Descriptor
-	libusb_set_interface_alt_setting(devh, IFACE_NUM, 1);
- 
 	 //-------------------Start transfer
 	uint8_t buf[PACKET_SIZE*NUM_PACKETS];
 	struct libusb_transfer* xfr[NUM_TRANSFERS];
