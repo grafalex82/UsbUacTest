@@ -64,9 +64,16 @@ void record(int argc, char ** argv)
     std::unique_ptr<unsigned char[]> pcmData(new unsigned char[size]);
     device.recordPCM(pcmData.get(), size);
 
+    std::unique_ptr<unsigned char[]> pcmData2(new unsigned char[size/3*2]);
+    for(size_t sample=0; sample < size /3; sample++)
+    {
+        pcmData2[sample*2] = pcmData[sample*3];
+        pcmData2[sample*2+1] = pcmData[sample*3+1];
+    }
+
     FILE * pcm = fopen(argv[2],"w+b");
     check(pcm != NULL, "fopen() pcm file");
-    fwrite(pcmData.get(), 1, size, pcm);
+    fwrite(pcmData2.get(), 1, size/3*2, pcm);
     fclose(pcm);
 }
 
