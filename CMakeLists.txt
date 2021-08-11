@@ -14,9 +14,6 @@ pkg_check_modules(libusb-1.0 REQUIRED libusb-1.0)
 
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-
-find_package(Qt5Core)
 
 add_executable(${PROJECT_NAME} 
     "main.cpp"
@@ -25,5 +22,5 @@ add_executable(${PROJECT_NAME}
     UacDevice.cpp
     )
 target_include_directories(${PROJECT_NAME} PUBLIC ${libusb-1.0_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} Qt5::Core ${libusb-1.0_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${libusb-1.0_LIBRARIES})
 target_link_directories(${PROJECT_NAME} PUBLIC libusb)
