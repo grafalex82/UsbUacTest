@@ -223,14 +223,22 @@ void UsbDevice::handleLoopbackPacketReceive(libusb_transfer * xfer)
         return;
     }
 
+    static int packetNumber = 0;
+
     // Convert 24bit mono to 16bit stereo
     uint8_t * inputBuf = xfer->buffer;
     uint8_t * outputBuf = buffers.back();
     buffers.pop_back();
 
+    bool dim = (packetNumber++ & 256);
+
     for(int i=0; i<xfer->length/3; i++)
     {
         int16_t v = *(int16_t *)(inputBuf + i*3 + 1);
+
+        if(dim)
+            v /= 2;
+
         *(int16_t *)(outputBuf + i*4) = v;
         *(int16_t *)(outputBuf + i*4 + 2) = v;
     }
