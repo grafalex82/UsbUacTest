@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 static const size_t NUM_TRANSFERS = 2;
-static const uint8_t NUM_PACKETS = 2;
+static const uint8_t NUM_PACKETS = 1;
 
 UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
 {
@@ -232,15 +232,18 @@ void UsbDevice::handleLoopbackPacketReceive(libusb_transfer * xfer)
 
     bool dim = (packetNumber++ & 256);
 
-    for(int i=0; i<xfer->length/3; i++)
+    uint16_t inputLen = xfer->iso_packet_desc[0].actual_length;
+    uint16_t outputLen = 0;
+    for(int i=0; i<inputLen/3; i++)
     {
         int16_t v = *(int16_t *)(inputBuf + i*3 + 1);
 
-        if(dim)
-            v /= 2;
+//        if(dim)
+//            v /= 2;
 
         *(int16_t *)(outputBuf + i*4) = v;
         *(int16_t *)(outputBuf + i*4 + 2) = v;
+        outputLen += 4;
     }
 
 
@@ -252,9 +255,9 @@ void UsbDevice::handleLoopbackPacketReceive(libusb_transfer * xfer)
     libusb_transfer * outXfer = availableOutXfers.back();
     availableOutXfers.pop_back();
 
-    size_t chunkSize = outPacketSize * NUM_PACKETS;
-    libusb_fill_iso_transfer(outXfer, hdev, outEp, outputBuf, chunkSize, NUM_PACKETS, loopbackPacketSendCB, this, 1000);
-    libusb_set_iso_packet_lengths(outXfer, outPacketSize);
+//    size_t chunkSize = outPacketSize * NUM_PACKETS;
+    libusb_fill_iso_transfer(outXfer, hdev, outEp, outputBuf, outputLen, NUM_PACKETS, loopbackPacketSendCB, this, 1000);
+    libusb_set_iso_packet_lengths(outXfer, outputLen /*outPacketSize*/);
     libusb_submit_transfer(outXfer);
 }
 

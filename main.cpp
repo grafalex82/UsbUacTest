@@ -97,10 +97,10 @@ void loopback(int argc, char ** argv)
     device.prepareAudioOutput();
     device.prepareAudioInput();
 
-    device.setChannelSampleRate(UacDevice::Output, 48000);
+    device.setChannelSampleRate(UacDevice::Output, 44100);
     printf("    Output Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Output));
 
-    device.setChannelSampleRate(UacDevice::Input, 48000);
+    device.setChannelSampleRate(UacDevice::Input, 44100);
     printf("    Input Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Input));
 
     device.loopback();
