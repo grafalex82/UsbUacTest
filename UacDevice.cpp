@@ -56,7 +56,7 @@ void UacDevice::prepareAudioOutput()
 void UacDevice::prepareAudioInput()
 {
     // Select interface configuration with 16bit sample size
-    device.setAltsetting(AUDIO_INPUT_INTERFACE, SAMPLE_SIZE_24BIT_ALTSETTING);
+    device.setAltsetting(AUDIO_INPUT_INTERFACE, SAMPLE_SIZE_16BIT_ALTSETTING);
 }
 
 void UacDevice::setChannelVolume(Channel channel, int volume)
@@ -165,4 +165,9 @@ void UacDevice::recordPCM(unsigned char * data, size_t size)
                            data,
                            size,
                            INPUT_PACKET_SIZE);
+}
+
+void UacDevice::loopback()
+{
+    device.loopback(AUDIO_INPUT_STREAMING_EP, INPUT_PACKET_SIZE, AUDIO_OUTPUT_STREAMING_EP, OUTPUT_PACKET_SIZE);
 }

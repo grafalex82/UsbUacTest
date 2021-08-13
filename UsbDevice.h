@@ -12,6 +12,11 @@ class UsbDevice
     libusb_device_handle * hdev;
 
     std::vector<libusb_transfer *>  availableXfers;
+    std::vector<libusb_transfer *>  availableOutXfers;
+    std::vector<uint8_t *> buffers;
+
+    uint8_t outEp;
+    uint16_t outPacketSize;
 
 public:
     UsbDevice(uint16_t vid, uint16_t pid);
@@ -28,12 +33,19 @@ public:
     void sendIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
     void receiveIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
 
+    void loopback(uint8_t inEp, uint16_t inPacketSize, uint8_t outEp, uint16_t outPacketSize);
+
     void closeInterface(uint8_t interface);
 
 
 protected:
     static void transferCompleteCB(libusb_transfer * xfer);
     virtual void handleTransferCompleteCB(libusb_transfer * xfer);
+
+    static void loopbackPacketReceiveCB(libusb_transfer * xfer);
+    virtual void handleLoopbackPacketReceive(libusb_transfer * xfer);
+    static void loopbackPacketSendCB(libusb_transfer * xfer);
+    virtual void handleLoopbackPacketSend(libusb_transfer * xfer);
 };
 
 #endif //_USB_DEVICE_H
