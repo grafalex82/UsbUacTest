@@ -29,8 +29,8 @@ static const uint8_t AUDIO_CONTROL_SELECTOR_VOLUME = 0x02U;
 
 static const uint8_t SAMPLING_FREQ_CONTROL = 0x01U;
 
-static const uint16_t OUTPUT_PACKET_SIZE = (48000 / 1000) * sizeof(uint16_t) * 2; // 1 ms of audio at 48kHz rate, 2 bytes per sample, 2 channels
-static const uint16_t INPUT_PACKET_SIZE = (48000 / 1000) * 3 ; // 1 ms of audio at 48kHz rate, 3 bytes per sample (even for 16bit sample size), 1 channel
+static const uint16_t OUTPUT_PACKET_SIZE = (96000 / 1000) * sizeof(uint16_t) * 2; // 1 ms of audio at 48kHz rate, 2 bytes per sample, 2 channels
+static const uint16_t INPUT_PACKET_SIZE = (96000 / 1000) * 3 ; // 1 ms of audio at 48kHz rate, 3 bytes per sample (even for 16bit sample size), 1 channel
 
 UacDevice::UacDevice(uint16_t vid, uint16_t pid)
     : device(vid, pid)
