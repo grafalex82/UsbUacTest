@@ -8,6 +8,8 @@
 static const uint16_t IRIG_UD2_VID = 0x1963;
 static const uint16_t IRIG_UD2_PID = 0x0033;
 
+static const int LOOPBACK_SAMPLE_RATE = 44100;
+
 void printUsage()
 {
     printf("Usage:\n");
@@ -97,10 +99,10 @@ void loopback(int argc, char ** argv)
     device.prepareAudioOutput();
     device.prepareAudioInput();
 
-    device.setChannelSampleRate(UacDevice::Output, 44100);
+    device.setChannelSampleRate(UacDevice::Output, LOOPBACK_SAMPLE_RATE);
     printf("    Output Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Output));
 
-    device.setChannelSampleRate(UacDevice::Input, 44100);
+    device.setChannelSampleRate(UacDevice::Input, LOOPBACK_SAMPLE_RATE);
     printf("    Input Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Input));
 
     device.loopback();
