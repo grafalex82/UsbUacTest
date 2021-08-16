@@ -9,6 +9,8 @@ project(UAC2Test VERSION 0.1 LANGUAGES CXX)
 #  NAMES usb
 #  PATH_SUFFIXES "lib" "lib32" "lib64" "x86_64-linux-gnu")
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(libusb-1.0 REQUIRED libusb-1.0)
 
@@ -22,5 +24,5 @@ add_executable(${PROJECT_NAME}
     UacDevice.cpp
     )
 target_include_directories(${PROJECT_NAME} PUBLIC ${libusb-1.0_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${libusb-1.0_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${libusb-1.0_LIBRARIES} Threads::Threads)
 target_link_directories(${PROJECT_NAME} PUBLIC libusb)
