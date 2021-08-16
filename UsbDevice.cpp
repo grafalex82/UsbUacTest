@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 static const size_t NUM_TRANSFERS = 2;
-static const uint8_t NUM_PACKETS = 1;
+static const uint8_t NUM_PACKETS = 2;
 
 UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
 {
@@ -223,41 +223,44 @@ void UsbDevice::handleLoopbackPacketReceive(libusb_transfer * xfer)
         return;
     }
 
-    static int packetNumber = 0;
 
-    // Convert 24bit mono to 16bit stereo
-    uint8_t * inputBuf = xfer->buffer;
+    // Prepare output buffer and transfer
     uint8_t * outputBuf = buffers.back();
     buffers.pop_back();
-
-    bool dim = (packetNumber++ & 256);
-
-    uint16_t inputLen = xfer->iso_packet_desc[0].actual_length;
-    uint16_t outputLen = 0;
-    for(int i=0; i<inputLen/3; i++)
-    {
-        int16_t v = *(int16_t *)(inputBuf + i*3 + 1);
-
-//        if(dim)
-//            v /= 2;
-
-        *(int16_t *)(outputBuf + i*4) = v;
-        *(int16_t *)(outputBuf + i*4 + 2) = v;
-        outputLen += 4;
-    }
-
-
-    // return input transfer and its buffer to the pool
-    buffers.push_back(inputBuf);
-    availableXfers.push_back(xfer);
-
-    // Schedule output transfer
     libusb_transfer * outXfer = availableOutXfers.back();
     availableOutXfers.pop_back();
 
-//    size_t chunkSize = outPacketSize * NUM_PACKETS;
-    libusb_fill_iso_transfer(outXfer, hdev, outEp, outputBuf, outputLen, NUM_PACKETS, loopbackPacketSendCB, this, 1000);
-    libusb_set_iso_packet_lengths(outXfer, outputLen /*outPacketSize*/);
+    libusb_fill_iso_transfer(outXfer, hdev, outEp, outputBuf, 0, NUM_PACKETS, loopbackPacketSendCB, this, 1000);
+
+    // Iterate over the packets and Convert 24bit mono to 16bit stereo
+    int totalOutputLen = 0;
+    for(int p = 0; p < xfer->num_iso_packets; p++)
+    {
+        uint8_t * inputBuf = libusb_get_iso_packet_buffer(xfer, p);
+        int inputLen = xfer->iso_packet_desc[p].actual_length;
+        int outputLen = 0;
+        for(int i=0; i<inputLen/3; i++)
+        {
+            int16_t v = *(int16_t *)(inputBuf + i*3 + 1);
+
+            *(int16_t *)(outputBuf + totalOutputLen + i*4) = v;
+            *(int16_t *)(outputBuf + totalOutputLen + i*4 + 2) = v;
+            outputLen += 4;
+        }
+
+        outXfer->iso_packet_desc[p].length = outputLen;
+
+        totalOutputLen += outputLen;
+    }
+
+    outXfer->length = totalOutputLen;
+
+
+    // return input transfer and its buffer to the pool
+    buffers.push_back(xfer->buffer);
+    availableXfers.push_back(xfer);
+
+    // Schedule output transfer
     libusb_submit_transfer(outXfer);
 }
 
