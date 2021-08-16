@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <vector>
 
+namespace std
+{
+    class thread;
+};
+
 struct libusb_device_handle;
 struct libusb_transfer;
 
@@ -15,8 +20,11 @@ class UsbDevice
     std::vector<libusb_transfer *>  availableOutXfers;
     std::vector<uint8_t *> buffers;
 
+    uint8_t inEp;
     uint8_t outEp;
+    uint16_t inPacketSize;
     uint16_t outPacketSize;
+    std::thread * loopbackThread;
 
 public:
     UsbDevice(uint16_t vid, uint16_t pid);
@@ -39,6 +47,8 @@ public:
 
 
 protected:
+    virtual void loopbackEventLoop();
+
     static void transferCompleteCB(libusb_transfer * xfer);
     virtual void handleTransferCompleteCB(libusb_transfer * xfer);
 

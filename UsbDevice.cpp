@@ -3,6 +3,7 @@
 
 #include <libusb.h>
 #include <stdio.h>
+#include <thread>
 
 static const size_t NUM_TRANSFERS = 2;
 static const uint8_t NUM_PACKETS = 2;
@@ -46,8 +47,11 @@ UsbDevice::~UsbDevice()
     for(uint8_t * buf : buffers)
         delete [] buf;
 
+    loopbackThread->join();
+    delete loopbackThread;
+
     libusb_close(hdev);
-        libusb_exit(NULL);
+    libusb_exit(NULL);
 }
 
 void UsbDevice::openInterface(uint8_t interface)
@@ -180,9 +184,18 @@ void UsbDevice::receiveIsoData(uint8_t ep, unsigned char * data, size_t size, ui
 
 void UsbDevice::loopback(uint8_t inEp, uint16_t inPacketSize, uint8_t outEp, uint16_t outPacketSize)
 {
+    this->inEp = inEp;
+    this->inPacketSize = inPacketSize;
     this->outEp = outEp;
     this->outPacketSize = outPacketSize;
 
+    auto loopbackFunc = [this]() {this->loopbackEventLoop();};
+    loopbackThread = new std::thread(loopbackFunc);
+}
+
+void UsbDevice::loopbackEventLoop()
+{
+printf("UsbDevice::loopbackEventLoop()\n");
     while(true)
     {
         // Schedule as many packet transfers as possible
@@ -222,7 +235,6 @@ void UsbDevice::handleLoopbackPacketReceive(libusb_transfer * xfer)
         availableXfers.push_back(xfer);
         return;
     }
-
 
     // Prepare output buffer and transfer
     uint8_t * outputBuf = buffers.back();

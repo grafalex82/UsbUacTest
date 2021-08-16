@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <memory>
+#include <chrono>
+#include <thread>
 
 
 static const uint16_t IRIG_UD2_VID = 0x1963;
@@ -106,6 +108,8 @@ void loopback(int argc, char ** argv)
     printf("    Input Sample Rate: %d\n", device.getChannelSampleRate(UacDevice::Input));
 
     device.loopback();
+    while(true)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); //TODO: make a non-CPU consuming wait here
 }
 
 int main(int argc, char ** argv)
