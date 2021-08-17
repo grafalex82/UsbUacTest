@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <vector>
+#include <list>
+#include <mutex>
+#include <condition_variable>
 
 namespace std
 {
@@ -26,6 +29,19 @@ class UsbDevice
     uint16_t outPacketSize;
     std::thread * loopbackThread;
 
+    struct TransferQueueEntry
+    {
+        uint8_t ep;
+        uint8_t * data;
+        uint16_t len;
+    };
+
+    std::list<TransferQueueEntry> transferQueue;
+    std::mutex queueMutex;
+    std::condition_variable transfer_cv;
+
+    std::thread * transferThread;
+
 public:
     UsbDevice(uint16_t vid, uint16_t pid);
     ~UsbDevice();
@@ -38,7 +54,11 @@ public:
     void getControlAttr(bool recepient, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint16_t wLength, unsigned char * data);
     void setControlAttr(bool recepient, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint16_t wLength, unsigned char * data);
 
+    void startTransferLoop();
+    void stopTransferLoop();
+
     void sendIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
+    void sendIsoPacket(uint8_t ep, unsigned char * data, uint16_t size);
     void receiveIsoData(uint8_t ep, unsigned char * data, size_t size, uint16_t packetSize);
 
     void loopback(uint8_t inEp, uint16_t inPacketSize, uint8_t outEp, uint16_t outPacketSize);
@@ -47,6 +67,7 @@ public:
 
 
 protected:
+    virtual void transferEventLoop();
     virtual void loopbackEventLoop();
 
     static void transferCompleteCB(libusb_transfer * xfer);

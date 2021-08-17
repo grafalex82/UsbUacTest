@@ -153,10 +153,28 @@ uint8_t UacDevice::getCtrlUnitForChannel(Channel channel)
 
 void UacDevice::playPCM(unsigned char * data, size_t size)
 {
-    device.sendIsoData(AUDIO_OUTPUT_STREAMING_EP,
-                           data,
-                           size,
-                           OUTPUT_PACKET_SIZE);
+    device.startTransferLoop();
+
+    int sampleRate = getChannelSampleRate(UacDevice::Output);
+
+    if(sampleRate % 1000 == 0)
+    {
+        size_t packetSize = sampleRate / 1000 * 2 * 2; // 2 channels 16 bit
+        size_t bytesToGo = size;
+
+        while(bytesToGo > 0)
+        {
+            device.sendIsoPacket(AUDIO_OUTPUT_STREAMING_EP, data, packetSize);
+            data += packetSize;
+            bytesToGo -= packetSize;
+        }
+    }
+    else
+    {
+        printf("UacDevice::playPCM(): odd sample rates are not yet implemented\n");
+    }
+
+    device.stopTransferLoop();
 }
 
 void UacDevice::recordPCM(unsigned char * data, size_t size)
