@@ -35,7 +35,10 @@ UsbDevice::UsbDevice(uint16_t vid, uint16_t pid)
         buffers.push_back(buf);
     }
 
+    loopbackThread = nullptr;
+
     transferThread = nullptr;
+    stopping = false;
 }
 
 UsbDevice::~UsbDevice()
@@ -51,9 +54,11 @@ UsbDevice::~UsbDevice()
     for(uint8_t * buf : buffers)
         delete [] buf;
 
-
-    loopbackThread->join();
-    delete loopbackThread;
+    if(loopbackThread)
+    {
+        loopbackThread->join();
+        delete loopbackThread;
+    }
 
     libusb_close(hdev);
     libusb_exit(NULL);
@@ -61,13 +66,24 @@ UsbDevice::~UsbDevice()
 
 void UsbDevice::startTransferLoop()
 {
+    // Already running?
+    if(transferThread)
+        return;
+
+    stopping = false;
     transferThread = new std::thread([this]() {this->transferEventLoop();});
 }
 
 void UsbDevice::stopTransferLoop()
 {
+    // Already stopped?
+    if(!transferThread)
+        return;
+
+    stopping = true;
     transferThread->join();
     delete transferThread;
+    transferThread = nullptr;
 }
 
 void UsbDevice::openInterface(uint8_t interface)
@@ -126,7 +142,6 @@ void UsbDevice::transferCompleteCB(struct libusb_transfer * xfer)
 
 void UsbDevice::handleTransferCompleteCB(libusb_transfer * xfer)
 {
-//    printf("UsbDevice::handleTransferCompleteCB() packet transferred\n");
     {
         std::lock_guard<std::mutex> guard(queueMutex);
         availableXfers.push_back(xfer);
@@ -203,7 +218,11 @@ void UsbDevice::transferEventLoop()
             libusb_set_iso_packet_lengths(xfer, entry.len);
             libusb_submit_transfer(xfer);
         }
+
+        if(stopping && transferQueue.size() == 0 && availableXfers.size() == NUM_TRANSFERS)
+            break;
     }
+    printf("UsbDevice::transferEventLoop() completed\n");
 }
 
 

@@ -6,6 +6,7 @@
 #include <list>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 namespace std
 {
@@ -41,6 +42,7 @@ class UsbDevice
     std::condition_variable transfer_cv;
 
     std::thread * transferThread;
+    std::atomic<bool> stopping;
 
 public:
     UsbDevice(uint16_t vid, uint16_t pid);
